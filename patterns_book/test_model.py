@@ -2,7 +2,7 @@ from datetime import date, timedelta
 import pytest
 from uuid import uuid4
 
-from model import allocate, Batch, OrderLine, OutOfStock
+from patterns_book.model import allocate, Batch, OrderLine, OutOfStock
 
 
 def test_allocating_to_a_batch_reduces_the_available_quantity():
