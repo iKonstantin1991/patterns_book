@@ -39,6 +39,9 @@ class Batch:
             return True
         return self.eta > other.eta
 
+    def __eq__(self, other: Batch) -> bool:
+        return self.reference == other.reference
+
 
 class OutOfStock(Exception):
     pass
