@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import date
+from typing import Any
+
 
 @dataclass(frozen=True)
 class OrderLine:
@@ -11,7 +13,9 @@ class OrderLine:
 
 
 class Batch:
-    def __init__(self, ref: str, sku: str, qty: int, eta: datetime.date | None = None) -> None:
+    def __init__(
+        self, ref: str, sku: str, qty: int, eta: date | None = None
+    ) -> None:
         self.reference = ref
         self.sku = sku
         self.eta = eta
@@ -30,7 +34,11 @@ class Batch:
             self._allocations.remove(line)
 
     def can_allocate(self, line: OrderLine) -> bool:
-        return self.sku == line.sku and self.available_quantity >= line.qty and line not in self._allocations
+        return (
+            self.sku == line.sku
+            and self.available_quantity >= line.qty
+            and line not in self._allocations
+        )
 
     def __gt__(self, other: Batch) -> bool:
         if self.eta is None:
@@ -38,6 +46,11 @@ class Batch:
         if other.eta is None:
             return True
         return self.eta > other.eta
+
+    def __eq__(self, other: Any) -> bool:
+        if not isinstance(other, Batch):
+            return False
+        return self.reference == other.reference
 
 
 class OutOfStock(Exception):
