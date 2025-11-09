@@ -1,5 +1,9 @@
+# envs
 .venv
-.mypy_cache
 __pycache__
 *.egg-info
+
+# cache
+.mypy_cache
 .pytest_cache
+.ruff_cache

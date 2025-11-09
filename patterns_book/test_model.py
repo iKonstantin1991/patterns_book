@@ -31,7 +31,9 @@ def test_deallocate_reduces_the_allocated_quantity() -> None:
     assert batch.available_quantity == 20
 
 
-def test_deallocate_if_line_is_not_allocated_does_not_reduces_the_available_quantity() -> None:
+def test_deallocate_if_line_is_not_allocated_does_not_reduces_the_available_quantity() -> (
+    None
+):
     batch, line = _make_batch_and_line(20, 2)
 
     batch.deallocate(line)

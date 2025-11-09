@@ -2,6 +2,7 @@ import abc
 from typing import Generic, TypeVar
 
 from patterns_book import model
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 T = TypeVar("T")
@@ -21,8 +22,12 @@ class SQLRepository(AbstractRepository[T]):
 
 
 class BatchSQLRepository(SQLRepository[model.Batch]):
-    def add(self, entity: model.Batch) -> None:
-        self._session.add(entity)
+    def add(self, batch: model.Batch) -> None:
+        self._session.add(batch)
 
-    def get(self, id_: str) -> model.Batch | None:
-        return self._session.get(model.Batch, id_)
+    def get(self, reference: str) -> model.Batch | None:
+        return (
+            self._session.execute(select(model.Batch).filter_by(reference=reference))
+            .scalars()
+            .first()
+        )
