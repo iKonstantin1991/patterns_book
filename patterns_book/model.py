@@ -5,7 +5,7 @@ from datetime import date
 from typing import Any
 
 
-@dataclass(frozen=True)
+@dataclass(unsafe_hash=True)
 class OrderLine:
     orderid: str
     sku: str
@@ -13,24 +13,23 @@ class OrderLine:
 
 
 class Batch:
-    def __init__(
-        self, ref: str, sku: str, qty: int, eta: date | None = None
-    ) -> None:
+    def __init__(self, ref: str, sku: str, qty: int, eta: date | None = None) -> None:
         self.reference = ref
         self.sku = sku
         self.eta = eta
-        self.available_quantity = qty
         self._purchased_quantity = qty
         self._allocations: set[OrderLine] = set()
 
+    @property
+    def available_quantity(self) -> int:
+        return self._purchased_quantity - sum(line.qty for line in self._allocations)
+
     def allocate(self, line: OrderLine) -> None:
         if self.can_allocate(line):
-            self.available_quantity -= line.qty
             self._allocations.add(line)
 
     def deallocate(self, line: OrderLine) -> None:
         if line in self._allocations:
-            self.available_quantity += line.qty
             self._allocations.remove(line)
 
     def can_allocate(self, line: OrderLine) -> bool:

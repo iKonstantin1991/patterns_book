@@ -1,8 +1,7 @@
 from datetime import date, timedelta
 import pytest
-from uuid import uuid4
-
 from patterns_book.model import allocate, Batch, OrderLine, OutOfStock
+from patterns_book.conftest import generate_sku, make_batch, make_order_line
 
 
 def test_allocating_to_a_batch_reduces_the_available_quantity() -> None:
@@ -31,7 +30,9 @@ def test_deallocate_reduces_the_allocated_quantity() -> None:
     assert batch.available_quantity == 20
 
 
-def test_deallocate_if_line_is_not_allocated_does_not_reduces_the_available_quantity() -> None:
+def test_deallocate_if_line_is_not_allocated_does_not_reduces_the_available_quantity() -> (
+    None
+):
     batch, line = _make_batch_and_line(20, 2)
 
     batch.deallocate(line)
@@ -65,17 +66,17 @@ def test_cannot_allocate_already_allocated() -> None:
 
 
 def test_cannot_allocate_different_sku() -> None:
-    batch = _make_batch(_generate_sku(), 20)
-    line = _make_order_line(_generate_sku(), 2)
+    batch = make_batch(generate_sku(), 20)
+    line = make_order_line(generate_sku(), 2)
 
     assert not batch.can_allocate(line)
 
 
 def test_prefers_current_stock_batches_to_shipments() -> None:
-    sku = _generate_sku()
-    in_stock_batch = _make_batch(sku, 100, eta=None)
-    shipment_batch = _make_batch(sku, 100, eta=date.today() + timedelta(days=1))
-    line = _make_order_line(sku, 10)
+    sku = generate_sku()
+    in_stock_batch = make_batch(sku, 100, eta=None)
+    shipment_batch = make_batch(sku, 100, eta=date.today() + timedelta(days=1))
+    line = make_order_line(sku, 10)
 
     allocate(line, [in_stock_batch, shipment_batch])
 
@@ -85,11 +86,11 @@ def test_prefers_current_stock_batches_to_shipments() -> None:
 
 def test_prefers_earlier_batches() -> None:
     today = date.today()
-    sku = _generate_sku()
-    earliest = _make_batch(sku, 100, eta=today)
-    medium = _make_batch(sku, 100, eta=today + timedelta(days=5))
-    latest = _make_batch(sku, 100, eta=today + timedelta(days=10))
-    line = _make_order_line(sku, 10)
+    sku = generate_sku()
+    earliest = make_batch(sku, 100, eta=today)
+    medium = make_batch(sku, 100, eta=today + timedelta(days=5))
+    latest = make_batch(sku, 100, eta=today + timedelta(days=10))
+    line = make_order_line(sku, 10)
 
     allocate(line, [medium, earliest, latest])
 
@@ -99,10 +100,10 @@ def test_prefers_earlier_batches() -> None:
 
 
 def test_returns_allocated_batch_ref() -> None:
-    sku = _generate_sku()
-    in_stock_batch = _make_batch(sku, 100, eta=None)
-    shipment_batch = _make_batch(sku, 100, eta=date.today() + timedelta(days=1))
-    line = _make_order_line(sku, 10)
+    sku = generate_sku()
+    in_stock_batch = make_batch(sku, 100, eta=None)
+    shipment_batch = make_batch(sku, 100, eta=date.today() + timedelta(days=1))
+    line = make_order_line(sku, 10)
 
     allocation = allocate(line, [in_stock_batch, shipment_batch])
 
@@ -110,39 +111,27 @@ def test_returns_allocated_batch_ref() -> None:
 
 
 def test_raises_out_of_stock_if_cannot_allocate() -> None:
-    sku = _generate_sku()
-    batch = _make_batch(sku, 5)
-    line = _make_order_line(sku, 10)
+    sku = generate_sku()
+    batch = make_batch(sku, 5)
+    line = make_order_line(sku, 10)
 
     with pytest.raises(OutOfStock, match=sku):
         allocate(line, [batch]) is None
 
 
 def test_allocate_later_if_earlier_cannot_allocate() -> None:
-    sku = _generate_sku()
-    earlier = _make_batch(sku, 5, eta=date.today())
-    later = _make_batch(sku, 10, eta=date.today() + timedelta(days=5))
-    line = _make_order_line(sku, 7)
+    sku = generate_sku()
+    earlier = make_batch(sku, 5, eta=date.today())
+    later = make_batch(sku, 10, eta=date.today() + timedelta(days=5))
+    line = make_order_line(sku, 7)
 
     allocation = allocate(line, [later, earlier])
 
     assert allocation == later.reference
 
 
-def _generate_sku() -> str:
-    return str(uuid4())
-
-
-def _make_batch(sku: str, qty: int, eta: date | None = None) -> Batch:
-    return Batch(str(uuid4()), sku, qty, eta)
-
-
-def _make_order_line(sku: str, qty: int) -> OrderLine:
-    return OrderLine(str(uuid4()), sku, qty)
-
-
 def _make_batch_and_line(batch_qty: int, line_qty: int) -> tuple[Batch, OrderLine]:
-    sku = _generate_sku()
-    batch = _make_batch(sku, batch_qty)
-    line = _make_order_line(sku, line_qty)
+    sku = generate_sku()
+    batch = make_batch(sku, batch_qty)
+    line = make_order_line(sku, line_qty)
     return batch, line
