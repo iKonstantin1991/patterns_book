@@ -1,3 +1,3 @@
 #!/bin/bash
 
-pytest patterns_book/
+pytest tests/

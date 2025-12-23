@@ -1,8 +1,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import date
-from typing import Any, Sequence
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+    from datetime import date
 
 
 @dataclass(unsafe_hash=True)
@@ -33,11 +36,7 @@ class Batch:
             self._allocations.remove(line)
 
     def can_allocate(self, line: OrderLine) -> bool:
-        return (
-            self.sku == line.sku
-            and self.available_quantity >= line.qty
-            and line not in self._allocations
-        )
+        return self.sku == line.sku and self.available_quantity >= line.qty and line not in self._allocations
 
     def __gt__(self, other: Batch) -> bool:
         if self.eta is None:
@@ -46,7 +45,7 @@ class Batch:
             return True
         return self.eta > other.eta
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: object) -> bool:
         if not isinstance(other, Batch):
             return False
         return self.reference == other.reference
@@ -55,15 +54,16 @@ class Batch:
         return hash(self.reference)
 
 
-class OutOfStock(Exception):
+class OutOfStockError(Exception):
     pass
 
 
 def allocate(line: OrderLine, batches: Sequence[Batch]) -> str:
     try:
-        batch = next((b for b in sorted(batches) if b.can_allocate(line)))
+        batch = next(b for b in sorted(batches) if b.can_allocate(line))
     except StopIteration:
-        raise OutOfStock(f"Cannot allocate {line}")
+        msg = f"Cannot allocate {line}"
+        raise OutOfStockError(msg) from None
 
     batch.allocate(line)
     return batch.reference

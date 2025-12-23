@@ -2,10 +2,10 @@ from unittest.mock import Mock
 
 import pytest
 
-from patterns_book import model
-from patterns_book import services
-from patterns_book.repository import AbstractRepository
-from patterns_book.conftest import generate_sku, make_batch, make_order_line
+from patterns_book.adapters.repository import AbstractRepository
+from patterns_book.domain import model
+from patterns_book.service import services
+from tests.conftest import generate_sku, make_batch, make_order_line
 
 
 class FakeRepository(AbstractRepository[model.Batch]):
@@ -44,7 +44,7 @@ def test_allocate_raises_error_for_invalid_sku(session: Mock) -> None:
     batch = make_batch(sku, 100, eta=None)
     repo = FakeRepository([batch])
 
-    with pytest.raises(services.InvalidSku, match="Invalid sku NONEXISTENTSKU"):
+    with pytest.raises(services.InvalidSkuError, match="Invalid sku NONEXISTENTSKU"):
         services.allocate(line, repo, session)
 
 
@@ -54,5 +54,5 @@ def test_allocate_raises_error_if_out_of_stock(session: Mock) -> None:
     batch = make_batch(sku, 5)
     repo = FakeRepository([batch])
 
-    with pytest.raises(model.OutOfStock):
+    with pytest.raises(model.OutOfStockError):
         services.allocate(line, repo, session)

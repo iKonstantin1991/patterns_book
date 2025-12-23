@@ -3,8 +3,8 @@ from datetime import date
 
 import pytest
 
+from patterns_book.domain.model import Batch, OrderLine
 from patterns_book.settings import Settings
-from patterns_book.model import Batch, OrderLine
 
 
 @pytest.fixture(scope="session")

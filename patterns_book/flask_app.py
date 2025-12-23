@@ -4,12 +4,10 @@ from flask import Flask, request
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-
+from patterns_book.adapters import db_tables, repository
+from patterns_book.domain import model
+from patterns_book.service import services
 from patterns_book.settings import get_settings
-from patterns_book import model
-from patterns_book import db_tables
-from patterns_book import repository
-from patterns_book import services
 
 settings = get_settings()
 
@@ -30,7 +28,7 @@ def allocate() -> tuple[dict[str, Any], int]:
 
     try:
         batchref = services.allocate(line, repo, session)
-    except (model.OutOfStock, services.InvalidSku) as e:
+    except (model.OutOfStockError, services.InvalidSkuError) as e:
         return {"message": str(e)}, 400
 
     return {"batchref": batchref}, 201

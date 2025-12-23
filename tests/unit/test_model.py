@@ -1,7 +1,9 @@
-from datetime import date, timedelta
+from datetime import UTC, datetime, timedelta
+
 import pytest
-from patterns_book.model import allocate, Batch, OrderLine, OutOfStock
-from patterns_book.conftest import generate_sku, make_batch, make_order_line
+
+from patterns_book.domain.model import Batch, OrderLine, OutOfStockError, allocate
+from tests.conftest import generate_sku, make_batch, make_order_line
 
 
 def test_allocating_to_a_batch_reduces_the_available_quantity() -> None:
@@ -30,9 +32,7 @@ def test_deallocate_reduces_the_allocated_quantity() -> None:
     assert batch.available_quantity == 20
 
 
-def test_deallocate_if_line_is_not_allocated_does_not_reduces_the_available_quantity() -> (
-    None
-):
+def test_deallocate_if_line_is_not_allocated_does_not_reduces_the_available_quantity() -> None:
     batch, line = _make_batch_and_line(20, 2)
 
     batch.deallocate(line)
@@ -75,7 +75,7 @@ def test_cannot_allocate_different_sku() -> None:
 def test_prefers_current_stock_batches_to_shipments() -> None:
     sku = generate_sku()
     in_stock_batch = make_batch(sku, 100, eta=None)
-    shipment_batch = make_batch(sku, 100, eta=date.today() + timedelta(days=1))
+    shipment_batch = make_batch(sku, 100, eta=datetime.now(tz=UTC).date() + timedelta(days=1))
     line = make_order_line(sku, 10)
 
     allocate(line, [in_stock_batch, shipment_batch])
@@ -85,7 +85,7 @@ def test_prefers_current_stock_batches_to_shipments() -> None:
 
 
 def test_prefers_earlier_batches() -> None:
-    today = date.today()
+    today = datetime.now(tz=UTC).date()
     sku = generate_sku()
     earliest = make_batch(sku, 100, eta=today)
     medium = make_batch(sku, 100, eta=today + timedelta(days=5))
@@ -102,7 +102,7 @@ def test_prefers_earlier_batches() -> None:
 def test_returns_allocated_batch_ref() -> None:
     sku = generate_sku()
     in_stock_batch = make_batch(sku, 100, eta=None)
-    shipment_batch = make_batch(sku, 100, eta=date.today() + timedelta(days=1))
+    shipment_batch = make_batch(sku, 100, eta=datetime.now(tz=UTC).date() + timedelta(days=1))
     line = make_order_line(sku, 10)
 
     allocation = allocate(line, [in_stock_batch, shipment_batch])
@@ -115,14 +115,14 @@ def test_raises_out_of_stock_if_cannot_allocate() -> None:
     batch = make_batch(sku, 5)
     line = make_order_line(sku, 10)
 
-    with pytest.raises(OutOfStock, match=sku):
-        allocate(line, [batch]) is None
+    with pytest.raises(OutOfStockError, match=sku):
+        assert allocate(line, [batch]) is None
 
 
 def test_allocate_later_if_earlier_cannot_allocate() -> None:
     sku = generate_sku()
-    earlier = make_batch(sku, 5, eta=date.today())
-    later = make_batch(sku, 10, eta=date.today() + timedelta(days=5))
+    earlier = make_batch(sku, 5, eta=datetime.now(tz=UTC).date())
+    later = make_batch(sku, 10, eta=datetime.now(tz=UTC).date() + timedelta(days=5))
     line = make_order_line(sku, 7)
 
     allocation = allocate(line, [later, earlier])

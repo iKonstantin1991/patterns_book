@@ -1,21 +1,20 @@
+from collections.abc import Generator
 from datetime import date
-from typing import Generator
 
 import pytest
-from sqlalchemy.orm import Session, clear_mappers
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import Engine
+from sqlalchemy.orm import Session, clear_mappers
 
+from patterns_book.adapters.db_tables import start_mappings
+from patterns_book.adapters.repository import BatchSQLRepository
 from patterns_book.settings import Settings
-from patterns_book.repository import BatchSQLRepository
-from patterns_book.db_tables import start_mappings
-
-from patterns_book.conftest import generate_sku, make_batch, make_order_line
+from tests.conftest import generate_sku, make_batch, make_order_line
 
 
 @pytest.fixture(scope="module")
-def engine(settings: Settings) -> Generator[Engine, None, None]:
-    yield create_engine(settings.postgres_dsn)
+def engine(settings: Settings) -> Engine:
+    return create_engine(settings.postgres_dsn)
 
 
 @pytest.fixture

@@ -1,7 +1,7 @@
-from sqlalchemy import Table, MetaData, Column, Integer, String, Date, ForeignKey
+from sqlalchemy import Column, Date, ForeignKey, Integer, MetaData, String, Table
 from sqlalchemy.orm import registry, relationship
 
-from patterns_book.model import Batch, OrderLine
+from patterns_book.domain.model import Batch, OrderLine
 
 metadata = MetaData()
 

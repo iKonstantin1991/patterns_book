@@ -1,9 +1,11 @@
 import abc
-from typing import Generic, TypeVar, Sequence
+from collections.abc import Sequence
+from typing import Generic, TypeVar
 
-from patterns_book import model
 from sqlalchemy import select
 from sqlalchemy.orm import Session
+
+from patterns_book.domain import model
 
 T = TypeVar("T")
 
@@ -20,7 +22,7 @@ class AbstractRepository(abc.ABC, Generic[T]):
 
 
 class SQLRepository(AbstractRepository[T]):
-    def __init__(self, session: Session):
+    def __init__(self, session: Session) -> None:
         self._session = session
 
 
@@ -29,11 +31,7 @@ class BatchSQLRepository(SQLRepository[model.Batch]):
         self._session.add(batch)
 
     def get(self, reference: str) -> model.Batch | None:
-        return (
-            self._session.execute(select(model.Batch).filter_by(reference=reference))
-            .scalars()
-            .first()
-        )
+        return self._session.execute(select(model.Batch).filter_by(reference=reference)).scalars().first()
 
     def list(self) -> Sequence[model.Batch]:
         return self._session.execute(select(model.Batch)).scalars().all()
