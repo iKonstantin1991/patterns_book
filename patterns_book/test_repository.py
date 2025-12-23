@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session, clear_mappers
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import Engine
 
+from patterns_book.settings import Settings
 from patterns_book.repository import BatchSQLRepository
 from patterns_book.db_tables import start_mappings
 
@@ -13,8 +14,8 @@ from patterns_book.conftest import generate_sku, make_batch, make_order_line
 
 
 @pytest.fixture(scope="module")
-def engine() -> Generator[Engine, None, None]:
-    yield create_engine("postgresql://postgres:qwerty12345@localhost:5432/postgres")
+def engine(settings: Settings) -> Generator[Engine, None, None]:
+    yield create_engine(settings.postgres_dsn)
 
 
 @pytest.fixture
@@ -147,3 +148,31 @@ def test_deallocate_order_line_from_batch(session: Session) -> None:
 def test_get_batch_returns_none(session: Session) -> None:
     rep = BatchSQLRepository(session)
     assert rep.get("anything") is None
+
+
+def test_list_empty_repository(session: Session) -> None:
+    rep = BatchSQLRepository(session)
+    batches = rep.list()
+    assert len(batches) == 0
+    assert batches == []
+
+
+def test_list_multiple_batches(session: Session) -> None:
+    rep = BatchSQLRepository(session)
+
+    batch1 = make_batch(generate_sku(), 10, date(2021, 1, 1))
+    batch2 = make_batch(generate_sku(), 20, date(2021, 2, 1))
+    batch3 = make_batch(generate_sku(), 30, date(2021, 3, 1))
+
+    rep.add(batch1)
+    rep.add(batch2)
+    rep.add(batch3)
+    session.commit()
+
+    batches = rep.list()
+    assert len(batches) == 3
+
+    batch_references = {batch.reference for batch in batches}
+    assert batch1.reference in batch_references
+    assert batch2.reference in batch_references
+    assert batch3.reference in batch_references

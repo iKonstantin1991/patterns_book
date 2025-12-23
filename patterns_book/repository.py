@@ -1,5 +1,5 @@
 import abc
-from typing import Generic, TypeVar
+from typing import Generic, TypeVar, Sequence
 
 from patterns_book import model
 from sqlalchemy import select
@@ -14,6 +14,9 @@ class AbstractRepository(abc.ABC, Generic[T]):
 
     @abc.abstractmethod
     def get(self, id_: str) -> T | None: ...
+
+    @abc.abstractmethod
+    def list(self) -> Sequence[T]: ...
 
 
 class SQLRepository(AbstractRepository[T]):
@@ -31,3 +34,6 @@ class BatchSQLRepository(SQLRepository[model.Batch]):
             .scalars()
             .first()
         )
+
+    def list(self) -> Sequence[model.Batch]:
+        return self._session.execute(select(model.Batch)).scalars().all()

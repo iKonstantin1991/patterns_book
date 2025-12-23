@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import date
-from typing import Any
+from typing import Any, Sequence
 
 
 @dataclass(unsafe_hash=True)
@@ -51,12 +51,15 @@ class Batch:
             return False
         return self.reference == other.reference
 
+    def __hash__(self) -> int:
+        return hash(self.reference)
+
 
 class OutOfStock(Exception):
     pass
 
 
-def allocate(line: OrderLine, batches: list[Batch]) -> str | None:
+def allocate(line: OrderLine, batches: Sequence[Batch]) -> str:
     try:
         batch = next((b for b in sorted(batches) if b.can_allocate(line)))
     except StopIteration:
