@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session, clear_mappers
 from patterns_book.adapters.db_tables import start_mappings
 from patterns_book.adapters.repository import BatchSQLRepository
 from patterns_book.settings import Settings
-from tests.conftest import generate_sku, make_batch, make_order_line
+from tests.conftest import generate_sku, make_domain_batch, make_domain_order_line
 
 
 @pytest.fixture(scope="module")
@@ -41,7 +41,7 @@ def mapping() -> Generator[None, None, None]:
 
 def test_add_new_batch(session: Session) -> None:
     rep = BatchSQLRepository(session)
-    batch = make_batch(generate_sku(), 10, date(1980, 1, 1))
+    batch = make_domain_batch(generate_sku(), 10, date(1980, 1, 1))
 
     rep.add(batch)
     session.commit()
@@ -58,7 +58,7 @@ def test_add_new_batch(session: Session) -> None:
 
 def test_get_batch(session: Session) -> None:
     rep = BatchSQLRepository(session)
-    batch = make_batch(generate_sku(), 10, date(1980, 1, 1))
+    batch = make_domain_batch(generate_sku(), 10, date(1980, 1, 1))
 
     session.execute(
         text("""
@@ -83,8 +83,8 @@ def test_get_batch(session: Session) -> None:
 
 def test_create_batch_with_pre_allocated_order_line(session: Session) -> None:
     sku = generate_sku()
-    batch = make_batch(sku, 10, date(2021, 1, 1))
-    order_line = make_order_line(sku, 2)
+    batch = make_domain_batch(sku, 10, date(2021, 1, 1))
+    order_line = make_domain_order_line(sku, 2)
 
     batch.allocate(order_line)
 
@@ -100,7 +100,7 @@ def test_create_batch_with_pre_allocated_order_line(session: Session) -> None:
 
 def test_allocate_order_line_to_retrieved_batch(session: Session) -> None:
     sku = generate_sku()
-    batch = make_batch(sku, 10, date(2021, 1, 1))
+    batch = make_domain_batch(sku, 10, date(2021, 1, 1))
 
     rep = BatchSQLRepository(session)
     rep.add(batch)
@@ -110,7 +110,7 @@ def test_allocate_order_line_to_retrieved_batch(session: Session) -> None:
     assert retrieved_batch is not None
     assert len(retrieved_batch._allocations) == 0
 
-    order_line = make_order_line(sku, 2)
+    order_line = make_domain_order_line(sku, 2)
     retrieved_batch.allocate(order_line)
 
     session.commit()
@@ -123,8 +123,8 @@ def test_allocate_order_line_to_retrieved_batch(session: Session) -> None:
 
 def test_deallocate_order_line_from_batch(session: Session) -> None:
     sku = generate_sku()
-    batch = make_batch(sku, 10, date(2021, 1, 1))
-    order_line = make_order_line(sku, 2)
+    batch = make_domain_batch(sku, 10, date(2021, 1, 1))
+    order_line = make_domain_order_line(sku, 2)
     batch.allocate(order_line)
 
     rep = BatchSQLRepository(session)
@@ -159,9 +159,9 @@ def test_list_empty_repository(session: Session) -> None:
 def test_list_multiple_batches(session: Session) -> None:
     rep = BatchSQLRepository(session)
 
-    batch1 = make_batch(generate_sku(), 10, date(2021, 1, 1))
-    batch2 = make_batch(generate_sku(), 20, date(2021, 2, 1))
-    batch3 = make_batch(generate_sku(), 30, date(2021, 3, 1))
+    batch1 = make_domain_batch(generate_sku(), 10, date(2021, 1, 1))
+    batch2 = make_domain_batch(generate_sku(), 20, date(2021, 2, 1))
+    batch3 = make_domain_batch(generate_sku(), 30, date(2021, 3, 1))
 
     rep.add(batch1)
     rep.add(batch2)
