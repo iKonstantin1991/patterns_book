@@ -1,7 +1,11 @@
 import uuid
+from collections.abc import Generator
 from datetime import date
 
 import pytest
+from sqlalchemy import create_engine, text
+from sqlalchemy.engine import Engine
+from sqlalchemy.orm import Session
 
 from patterns_book.domain import model as domain_model
 from patterns_book.settings import Settings
@@ -16,6 +20,26 @@ def settings() -> Settings:
         postgres_port=5432,
         postgres_db="postgres",
     )
+
+
+@pytest.fixture(scope="module")
+def engine(settings: Settings) -> Engine:
+    return create_engine(settings.postgres_dsn)
+
+
+@pytest.fixture
+def session(engine: Engine) -> Generator[Session, None, None]:
+    with Session(engine) as session:
+        yield session
+
+
+@pytest.fixture
+def db_cleanup(session: Session) -> Generator[None, None, None]:
+    yield
+    session.execute(text("DELETE FROM allocations"))
+    session.execute(text("DELETE FROM batches"))
+    session.execute(text("DELETE FROM order_lines"))
+    session.commit()
 
 
 def generate_sku() -> str:

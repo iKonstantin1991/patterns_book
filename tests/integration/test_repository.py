@@ -2,34 +2,14 @@ from collections.abc import Generator
 from datetime import date
 
 import pytest
-from sqlalchemy import create_engine, text
-from sqlalchemy.engine import Engine
+from sqlalchemy import text
 from sqlalchemy.orm import Session, clear_mappers
 
 from patterns_book.adapters.db_tables import start_mappings
 from patterns_book.adapters.repository import BatchSQLRepository
-from patterns_book.settings import Settings
 from tests.conftest import generate_sku, make_domain_batch, make_domain_order_line
 
-
-@pytest.fixture(scope="module")
-def engine(settings: Settings) -> Engine:
-    return create_engine(settings.postgres_dsn)
-
-
-@pytest.fixture
-def session(engine: Engine) -> Generator[Session, None, None]:
-    with Session(engine) as session:
-        yield session
-
-
-@pytest.fixture(autouse=True)
-def cleanup(session: Session) -> Generator[None, None, None]:
-    yield
-    session.execute(text("DELETE FROM allocations"))
-    session.execute(text("DELETE FROM batches"))
-    session.execute(text("DELETE FROM order_lines"))
-    session.commit()
+pytestmark = pytest.mark.usefixtures("db_cleanup")
 
 
 @pytest.fixture(scope="module", autouse=True)
