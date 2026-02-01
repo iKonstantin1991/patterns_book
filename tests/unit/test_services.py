@@ -1,13 +1,58 @@
 import uuid
 from datetime import date
-from unittest.mock import Mock
 
 import pytest
 
 from patterns_book.adapters.repository import AbstractRepository
+from patterns_book.adapters.unit_of_work import AbstractUnitOfWork
 from patterns_book.domain import model as domain_model
 from patterns_book.service import models, services
 from tests.conftest import generate_sku
+
+
+@pytest.fixture
+def uow() -> "FakeUOF":
+    return FakeUOF(FakeRepository([]))
+
+
+def test_allocate_returns_allocation(uow: "FakeUOF") -> None:
+    sku = generate_sku()
+    line = make_order_line(sku, 10)
+    batch = make_batch(sku, 100, eta=None)
+    services.add_batch(batch, uow)
+
+    result = services.allocate(line, uow)
+    assert result == batch.reference
+    assert uow.committed
+
+
+def test_allocate_raises_error_for_invalid_sku(uow: "FakeUOF") -> None:
+    sku = generate_sku()
+    line = make_order_line("NONEXISTENTSKU", 10)
+    batch = make_batch(sku, 100, eta=None)
+    services.add_batch(batch, uow)
+
+    with pytest.raises(services.InvalidSkuError, match="Invalid sku NONEXISTENTSKU"):
+        services.allocate(line, uow)
+
+
+def test_allocate_raises_error_if_out_of_stock(uow: "FakeUOF") -> None:
+    sku = generate_sku()
+    line = make_order_line(sku, 10)
+    batch = make_batch(sku, 5)
+    services.add_batch(batch, uow)
+
+    with pytest.raises(domain_model.OutOfStockError):
+        services.allocate(line, uow)
+
+
+def test_add_batch(uow: "FakeUOF") -> None:
+    batch = make_batch(generate_sku(), 10)
+
+    services.add_batch(batch, uow)
+
+    assert uow.batches.get(batch.reference) == domain_model.Batch(batch.reference, batch.sku, batch.qty, batch.eta)
+    assert uow.committed
 
 
 class FakeRepository(AbstractRepository[domain_model.Batch]):
@@ -24,9 +69,19 @@ class FakeRepository(AbstractRepository[domain_model.Batch]):
         return list(self._batches)
 
 
-@pytest.fixture
-def session() -> Mock:
-    return Mock()
+class FakeUOF(AbstractUnitOfWork):
+    def __init__(
+        self,
+        batches: AbstractRepository[domain_model.Batch],
+    ) -> None:
+        self.batches = batches
+        self.committed = False
+
+    def commit(self) -> None:
+        self.committed = True
+
+    def rollback(self) -> None:
+        pass
 
 
 def make_batch(sku: str, qty: int, eta: date | None = None) -> models.Batch:
@@ -44,44 +99,3 @@ def make_order_line(sku: str, qty: int) -> models.OrderLine:
         sku=sku,
         qty=qty,
     )
-
-
-def test_allocate_returns_allocation(session: Mock) -> None:
-    sku = generate_sku()
-    line = make_order_line(sku, 10)
-    batch = make_batch(sku, 100, eta=None)
-    repo = FakeRepository([domain_model.Batch(batch.reference, batch.sku, batch.qty, batch.eta)])
-
-    result = services.allocate(line, repo, session)
-    assert result == batch.reference
-    session.commit.assert_called_once()
-
-
-def test_allocate_raises_error_for_invalid_sku(session: Mock) -> None:
-    sku = generate_sku()
-    line = make_order_line("NONEXISTENTSKU", 10)
-    batch = make_batch(sku, 100, eta=None)
-    repo = FakeRepository([domain_model.Batch(batch.reference, batch.sku, batch.qty, batch.eta)])
-
-    with pytest.raises(services.InvalidSkuError, match="Invalid sku NONEXISTENTSKU"):
-        services.allocate(line, repo, session)
-
-
-def test_allocate_raises_error_if_out_of_stock(session: Mock) -> None:
-    sku = generate_sku()
-    line = make_order_line(sku, 10)
-    batch = make_batch(sku, 5)
-    repo = FakeRepository([domain_model.Batch(batch.reference, batch.sku, batch.qty, batch.eta)])
-
-    with pytest.raises(domain_model.OutOfStockError):
-        services.allocate(line, repo, session)
-
-
-def test_add_batch(session: Mock) -> None:
-    batch = make_batch(generate_sku(), 10)
-    repo = FakeRepository([])
-
-    services.add_batch(batch, repo, session)
-
-    assert repo.get(batch.reference) == domain_model.Batch(batch.reference, batch.sku, batch.qty, batch.eta)
-    session.commit.assert_called_once()
