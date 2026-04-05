@@ -11,9 +11,14 @@ class SessionInitializationError(Exception):
 
 
 @lru_cache
-def init_sessionmaker(postgres_dsn: str) -> None:
+def init_sessionmaker(postgres_dsn: str, schema: str) -> None:
     global session_maker  # noqa: PLW0603
-    session_maker = sessionmaker(bind=create_engine(postgres_dsn))
+    session_maker = sessionmaker(
+        bind=create_engine(
+            postgres_dsn,
+            connect_args={"options": f"-csearch_path={schema}"},
+        )
+    )
 
 
 def get_session() -> Session:

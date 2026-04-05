@@ -2,7 +2,7 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 
-from patterns_book.domain.model import Batch, OrderLine, OutOfStockError, allocate
+from patterns_book.domain.model import Batch, OrderLine, OutOfStockError, Product
 from tests.conftest import generate_sku, make_domain_batch, make_domain_order_line
 
 
@@ -14,7 +14,7 @@ def test_allocating_to_a_batch_reduces_the_available_quantity() -> None:
     assert batch.available_quantity == 18
 
 
-def test_allocating_sane_line_not_reduces_the_available_quantity() -> None:
+def test_allocating_same_line_not_reduces_the_available_quantity() -> None:
     batch, line = _make_batch_and_line(20, 2)
 
     batch.allocate(line)
@@ -76,9 +76,10 @@ def test_prefers_current_stock_batches_to_shipments() -> None:
     sku = generate_sku()
     in_stock_batch = make_domain_batch(sku, 100, eta=None)
     shipment_batch = make_domain_batch(sku, 100, eta=datetime.now(tz=UTC).date() + timedelta(days=1))
+    product = Product(sku, [in_stock_batch, shipment_batch])
     line = make_domain_order_line(sku, 10)
 
-    allocate(line, [in_stock_batch, shipment_batch])
+    product.allocate(line)
 
     assert in_stock_batch.available_quantity == 90
     assert shipment_batch.available_quantity == 100
@@ -90,9 +91,10 @@ def test_prefers_earlier_batches() -> None:
     earliest = make_domain_batch(sku, 100, eta=today)
     medium = make_domain_batch(sku, 100, eta=today + timedelta(days=5))
     latest = make_domain_batch(sku, 100, eta=today + timedelta(days=10))
+    product = Product(sku, [medium, earliest, latest])
     line = make_domain_order_line(sku, 10)
 
-    allocate(line, [medium, earliest, latest])
+    product.allocate(line)
 
     assert earliest.available_quantity == 90
     assert medium.available_quantity == 100
@@ -103,9 +105,10 @@ def test_returns_allocated_batch_ref() -> None:
     sku = generate_sku()
     in_stock_batch = make_domain_batch(sku, 100, eta=None)
     shipment_batch = make_domain_batch(sku, 100, eta=datetime.now(tz=UTC).date() + timedelta(days=1))
+    product = Product(sku, [in_stock_batch, shipment_batch])
     line = make_domain_order_line(sku, 10)
 
-    allocation = allocate(line, [in_stock_batch, shipment_batch])
+    allocation = product.allocate(line)
 
     assert allocation == in_stock_batch.reference
 
@@ -113,19 +116,21 @@ def test_returns_allocated_batch_ref() -> None:
 def test_raises_out_of_stock_if_cannot_allocate() -> None:
     sku = generate_sku()
     batch = make_domain_batch(sku, 5)
+    product = Product(sku, [batch])
     line = make_domain_order_line(sku, 10)
 
     with pytest.raises(OutOfStockError, match=sku):
-        assert allocate(line, [batch]) is None
+        assert product.allocate(line) is None
 
 
 def test_allocate_later_if_earlier_cannot_allocate() -> None:
     sku = generate_sku()
     earlier = make_domain_batch(sku, 5, eta=datetime.now(tz=UTC).date())
     later = make_domain_batch(sku, 10, eta=datetime.now(tz=UTC).date() + timedelta(days=5))
+    product = Product(sku, [later, earlier])
     line = make_domain_order_line(sku, 7)
 
-    allocation = allocate(line, [later, earlier])
+    allocation = product.allocate(line)
 
     assert allocation == later.reference
 

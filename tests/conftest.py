@@ -19,12 +19,16 @@ def settings() -> Settings:
         postgres_host="localhost",
         postgres_port=5432,
         postgres_db="postgres",
+        postgres_schema="patterns",
     )
 
 
 @pytest.fixture(scope="module")
 def engine(settings: Settings) -> Engine:
-    return create_engine(settings.postgres_dsn)
+    return create_engine(
+        settings.postgres_dsn,
+        connect_args={"options": f"-csearch_path={settings.postgres_schema}"},
+    )
 
 
 @pytest.fixture
@@ -39,6 +43,7 @@ def db_cleanup(session: Session) -> Generator[None, None, None]:
     session.execute(text("DELETE FROM allocations"))
     session.execute(text("DELETE FROM batches"))
     session.execute(text("DELETE FROM order_lines"))
+    session.execute(text("DELETE FROM products"))
     session.commit()
 
 
@@ -52,3 +57,7 @@ def make_domain_batch(sku: str, qty: int, eta: date | None = None) -> domain_mod
 
 def make_domain_order_line(sku: str, qty: int) -> domain_model.OrderLine:
     return domain_model.OrderLine(str(uuid.uuid4()), sku, qty)
+
+
+def make_domain_product(sku: str, batches: list[domain_model.Batch] | None = None) -> domain_model.Product:
+    return domain_model.Product(sku, batches or [])

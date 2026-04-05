@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     postgres_host: str
     postgres_port: int
     postgres_db: str
+    postgres_schema: str
 
     @property
     def postgres_dsn(self) -> str:

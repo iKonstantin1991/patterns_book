@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Date, ForeignKey, Integer, MetaData, String, Table
 from sqlalchemy.orm import registry, relationship
 
-from patterns_book.domain.model import Batch, OrderLine
+from patterns_book.domain.model import Batch, OrderLine, Product
 
 metadata = MetaData()
 
@@ -19,7 +19,7 @@ batches = Table(
     metadata,
     Column("id", Integer, primary_key=True, autoincrement=True),
     Column("reference", String(255)),
-    Column("sku", String(255)),
+    Column("sku", ForeignKey("products.sku")),
     Column("purchased_quantity", Integer),
     Column("eta", Date, nullable=True),
 )
@@ -30,6 +30,12 @@ allocations = Table(
     Column("id", Integer, primary_key=True, autoincrement=True),
     Column("orderline_id", ForeignKey("order_lines.id")),
     Column("batch_id", ForeignKey("batches.id")),
+)
+
+products = Table(
+    "products",
+    metadata,
+    Column("sku", String(255), primary_key=True),
 )
 
 mapper_registry = registry()
@@ -48,5 +54,11 @@ def start_mappings() -> None:
             ),
         },
     )
-
     mapper_registry.map_imperatively(OrderLine, order_lines)
+    mapper_registry.map_imperatively(
+        Product,
+        products,
+        properties={
+            "batches": relationship(Batch, collection_class=list),
+        },
+    )

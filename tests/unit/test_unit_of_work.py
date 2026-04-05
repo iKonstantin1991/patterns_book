@@ -11,26 +11,26 @@ def session() -> Mock:
 
 
 @pytest.fixture
-def batches() -> Mock:
+def products() -> Mock:
     return Mock()
 
 
-def test_sqlalchemy_uow_commit(session: Mock, batches: Mock) -> None:
-    uow = SqlAlchemyUnitOfWork(batches, session)
+def test_sqlalchemy_uow_commit(session: Mock, products: Mock) -> None:
+    uow = SqlAlchemyUnitOfWork(products, session)
     uow.commit()
 
     session.commit.assert_called_once()
 
 
-def test_sqlalchemy_uow_rollback(session: Mock, batches: Mock) -> None:
-    uow = SqlAlchemyUnitOfWork(batches, session)
+def test_sqlalchemy_uow_rollback(session: Mock, products: Mock) -> None:
+    uow = SqlAlchemyUnitOfWork(products, session)
     uow.rollback()
 
     session.rollback.assert_called_once()
 
 
-def test_sqlalchemy_uow_context_manager_rollback(session: Mock, batches: Mock) -> None:
-    uow = SqlAlchemyUnitOfWork(batches, session)
+def test_sqlalchemy_uow_context_manager_rollback(session: Mock, products: Mock) -> None:
+    uow = SqlAlchemyUnitOfWork(products, session)
 
     with uow:
         pass

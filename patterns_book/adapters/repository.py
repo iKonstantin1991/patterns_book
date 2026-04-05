@@ -26,12 +26,12 @@ class SQLRepository(AbstractRepository[T]):
         self._session = session
 
 
-class BatchSQLRepository(SQLRepository[model.Batch]):
-    def add(self, batch: model.Batch) -> None:
-        self._session.add(batch)
+class ProductSQLRepository(SQLRepository[model.Product]):
+    def add(self, product: model.Product) -> None:
+        self._session.add(product)
 
-    def get(self, reference: str) -> model.Batch | None:
-        return self._session.execute(select(model.Batch).filter_by(reference=reference)).scalars().first()
+    def get(self, sku: str) -> model.Product | None:
+        return self._session.execute(select(model.Product).filter_by(sku=sku)).scalars().first()
 
-    def list(self) -> Sequence[model.Batch]:
-        return self._session.execute(select(model.Batch)).scalars().all()
+    def list(self) -> Sequence[model.Product]:
+        return self._session.execute(select(model.Product)).scalars().all()

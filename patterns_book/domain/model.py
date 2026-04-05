@@ -4,8 +4,11 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
     from datetime import date
+
+
+class OutOfStockError(Exception):
+    pass
 
 
 @dataclass(unsafe_hash=True)
@@ -54,16 +57,25 @@ class Batch:
         return hash(self.reference)
 
 
-class OutOfStockError(Exception):
-    pass
+class Product:
+    def __init__(self, sku: str, batches: list[Batch]) -> None:
+        self.sku = sku
+        self.batches = batches
 
+    def allocate(self, line: OrderLine) -> str:
+        try:
+            batch = next(b for b in sorted(self.batches) if b.can_allocate(line))
+        except StopIteration:
+            msg = f"Cannot allocate {line}"
+            raise OutOfStockError(msg) from None
 
-def allocate(line: OrderLine, batches: Sequence[Batch]) -> str:
-    try:
-        batch = next(b for b in sorted(batches) if b.can_allocate(line))
-    except StopIteration:
-        msg = f"Cannot allocate {line}"
-        raise OutOfStockError(msg) from None
+        batch.allocate(line)
+        return batch.reference
 
-    batch.allocate(line)
-    return batch.reference
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Product):
+            return False
+        return self.sku == other.sku and self.batches == other.batches
+
+    def __hash__(self) -> int:
+        return hash(self.sku)

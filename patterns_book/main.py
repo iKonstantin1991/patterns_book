@@ -12,7 +12,7 @@ def create_app() -> Flask:
 
 
 def create_app_with_settings(settings: Settings) -> Flask:
-    init_sessionmaker(settings.postgres_dsn)
+    init_sessionmaker(settings.postgres_dsn, settings.postgres_schema)
     db_tables.start_mappings()
 
     app = Flask(__name__)

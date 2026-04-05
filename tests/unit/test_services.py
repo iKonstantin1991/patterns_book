@@ -51,30 +51,32 @@ def test_add_batch(uow: "FakeUOF") -> None:
 
     services.add_batch(batch, uow)
 
-    assert uow.batches.get(batch.reference) == domain_model.Batch(batch.reference, batch.sku, batch.qty, batch.eta)
+    product = uow.products.get(batch.sku)
+    assert product is not None
+    assert domain_model.Batch(batch.reference, batch.sku, batch.qty, batch.eta) in product.batches
     assert uow.committed
 
 
-class FakeRepository(AbstractRepository[domain_model.Batch]):
-    def __init__(self, batches: list[domain_model.Batch]) -> None:
-        self._batches = set(batches)
+class FakeRepository(AbstractRepository[domain_model.Product]):
+    def __init__(self, products: list[domain_model.Product]) -> None:
+        self._products = set(products)
 
-    def add(self, batch: domain_model.Batch) -> None:
-        self._batches.add(batch)
+    def add(self, batch: domain_model.Product) -> None:
+        self._products.add(batch)
 
-    def get(self, reference: str) -> domain_model.Batch | None:
-        return next((b for b in self._batches if b.reference == reference), None)
+    def get(self, sku: str) -> domain_model.Product | None:
+        return next((b for b in self._products if b.sku == sku), None)
 
-    def list(self) -> list[domain_model.Batch]:
-        return list(self._batches)
+    def list(self) -> list[domain_model.Product]:
+        return list(self._products)
 
 
 class FakeUOF(AbstractUnitOfWork):
     def __init__(
         self,
-        batches: AbstractRepository[domain_model.Batch],
+        products: AbstractRepository[domain_model.Product],
     ) -> None:
-        self.batches = batches
+        self.products = products
         self.committed = False
 
     def commit(self) -> None:
