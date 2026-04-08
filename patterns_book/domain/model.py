@@ -58,9 +58,10 @@ class Batch:
 
 
 class Product:
-    def __init__(self, sku: str, batches: list[Batch]) -> None:
+    def __init__(self, sku: str, batches: list[Batch], version_number: int = 0) -> None:
         self.sku = sku
         self.batches = batches
+        self._version_number = version_number
 
     def allocate(self, line: OrderLine) -> str:
         try:
@@ -70,6 +71,7 @@ class Product:
             raise OutOfStockError(msg) from None
 
         batch.allocate(line)
+        self._version_number += 1
         return batch.reference
 
     def __eq__(self, other: object) -> bool:

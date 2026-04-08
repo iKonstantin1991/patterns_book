@@ -6,6 +6,7 @@ import pytest
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session
+from sqlalchemy.orm import sessionmaker as sa_sessionmaker
 
 from patterns_book.domain import model as domain_model
 from patterns_book.settings import Settings
@@ -23,18 +24,23 @@ def settings() -> Settings:
     )
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def engine(settings: Settings) -> Engine:
     return create_engine(
         settings.postgres_dsn,
         connect_args={"options": f"-csearch_path={settings.postgres_schema}"},
+        isolation_level="REPEATABLE READ",
     )
 
 
+@pytest.fixture(scope="session")
+def sessionmaker(engine: Engine) -> sa_sessionmaker[Session]:
+    return sa_sessionmaker(bind=engine)
+
+
 @pytest.fixture
-def session(engine: Engine) -> Generator[Session, None, None]:
-    with Session(engine) as session:
-        yield session
+def session(sessionmaker: sa_sessionmaker[Session]) -> Session:
+    return sessionmaker()
 
 
 @pytest.fixture

@@ -36,6 +36,7 @@ products = Table(
     "products",
     metadata,
     Column("sku", String(255), primary_key=True),
+    Column("version_number", Integer, nullable=False, server_default="0"),
 )
 
 mapper_registry = registry()
@@ -59,6 +60,7 @@ def start_mappings() -> None:
         Product,
         products,
         properties={
+            "_version_number": products.c.version_number,
             "batches": relationship(Batch, collection_class=list),
         },
     )

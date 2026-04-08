@@ -17,6 +17,7 @@ def init_sessionmaker(postgres_dsn: str, schema: str) -> None:
         bind=create_engine(
             postgres_dsn,
             connect_args={"options": f"-csearch_path={schema}"},
+            isolation_level="REPEATABLE READ",
         )
     )
 

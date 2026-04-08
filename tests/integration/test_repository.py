@@ -1,22 +1,13 @@
-from collections.abc import Generator
 from datetime import date
 
 import pytest
 from sqlalchemy import text
-from sqlalchemy.orm import Session, clear_mappers
+from sqlalchemy.orm import Session
 
-from patterns_book.adapters.db_tables import start_mappings
 from patterns_book.adapters.repository import ProductSQLRepository
 from tests.conftest import generate_sku, make_domain_batch, make_domain_order_line, make_domain_product
 
 pytestmark = pytest.mark.usefixtures("db_cleanup")
-
-
-@pytest.fixture(scope="module", autouse=True)
-def mapping() -> Generator[None, None, None]:
-    start_mappings()
-    yield
-    clear_mappers()
 
 
 def test_add_new_product(session: Session) -> None:
