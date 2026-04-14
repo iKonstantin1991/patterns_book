@@ -36,14 +36,15 @@ def test_allocate_raises_error_for_invalid_sku(uow: "FakeUOF") -> None:
         services.allocate(line, uow)
 
 
-def test_allocate_raises_error_if_out_of_stock(uow: "FakeUOF") -> None:
+def test_allocate_returns_none_if_out_of_stock(uow: "FakeUOF") -> None:
     sku = generate_sku()
     line = make_order_line(sku, 10)
     batch = make_batch(sku, 5)
     services.add_batch(batch, uow)
 
-    with pytest.raises(domain_model.OutOfStockError):
-        services.allocate(line, uow)
+    actual = services.allocate(line, uow)
+
+    assert actual is None
 
 
 def test_add_batch(uow: "FakeUOF") -> None:

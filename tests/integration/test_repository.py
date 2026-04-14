@@ -23,6 +23,7 @@ def test_add_new_product(session: Session) -> None:
         {"sku": sku},
     ).fetchone()
     assert actual == (sku,)
+    assert rep.seen == {product}
 
 
 def test_get_product(session: Session) -> None:
@@ -38,6 +39,7 @@ def test_get_product(session: Session) -> None:
 
     actual = rep.get(sku)
     assert actual == product
+    assert rep.seen == {product}
 
 
 def test_create_product_with_batch_and_pre_allocated_order_line(session: Session) -> None:
@@ -128,6 +130,7 @@ def test_allocate_order_line_to_retrieved_product(session: Session) -> None:
 def test_get_batch_returns_none(session: Session) -> None:
     rep = ProductSQLRepository(session)
     assert rep.get("anything") is None
+    assert rep.seen == set()
 
 
 def test_list_empty_repository(session: Session) -> None:
@@ -135,6 +138,7 @@ def test_list_empty_repository(session: Session) -> None:
     batches = rep.list()
     assert len(batches) == 0
     assert batches == []
+    assert rep.seen == set()
 
 
 def test_list_multiple_products(session: Session) -> None:
@@ -156,3 +160,5 @@ def test_list_multiple_products(session: Session) -> None:
     assert product1.sku in product_skus
     assert product2.sku in product_skus
     assert product3.sku in product_skus
+
+    assert rep.seen == {product1, product2, product3}

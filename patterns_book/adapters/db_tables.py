@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Date, ForeignKey, Integer, MetaData, String, Table
+from sqlalchemy import Column, Date, ForeignKey, Integer, MetaData, String, Table, event
 from sqlalchemy.orm import registry, relationship
 
 from patterns_book.domain.model import Batch, OrderLine, Product
@@ -64,3 +64,8 @@ def start_mappings() -> None:
             "batches": relationship(Batch, collection_class=list),
         },
     )
+
+
+@event.listens_for(Product, "load")
+def receive_load(product: Product, _: object) -> None:
+    product.events = []

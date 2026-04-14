@@ -1,8 +1,7 @@
 from datetime import UTC, datetime, timedelta
 
-import pytest
-
-from patterns_book.domain.model import Batch, OrderLine, OutOfStockError, Product
+from patterns_book.domain.events import OutOfStock
+from patterns_book.domain.model import Batch, OrderLine, Product
 from tests.conftest import generate_sku, make_domain_batch, make_domain_order_line
 
 
@@ -113,14 +112,16 @@ def test_returns_allocated_batch_ref() -> None:
     assert allocation == in_stock_batch.reference
 
 
-def test_raises_out_of_stock_if_cannot_allocate() -> None:
+def test_returns_none_and_add_out_of_stock_event_if_cannot_allocate() -> None:
     sku = generate_sku()
     batch = make_domain_batch(sku, 5)
     product = Product(sku, [batch])
     line = make_domain_order_line(sku, 10)
 
-    with pytest.raises(OutOfStockError, match=sku):
-        assert product.allocate(line) is None
+    actual = product.allocate(line)
+
+    assert actual is None
+    assert product.events == [OutOfStock(sku)]
 
 
 def test_allocate_later_if_earlier_cannot_allocate() -> None:

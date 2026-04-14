@@ -11,6 +11,8 @@ T = TypeVar("T")
 
 
 class AbstractRepository(abc.ABC, Generic[T]):
+    seen: set[T]
+
     @abc.abstractmethod
     def add(self, entity: T) -> None: ...
 
@@ -27,11 +29,21 @@ class SQLRepository(AbstractRepository[T]):
 
 
 class ProductSQLRepository(SQLRepository[model.Product]):
+    def __init__(self, session: Session) -> None:
+        super().__init__(session)
+        self.seen = set()
+
     def add(self, product: model.Product) -> None:
         self._session.add(product)
+        self.seen.add(product)
 
     def get(self, sku: str) -> model.Product | None:
-        return self._session.execute(select(model.Product).filter_by(sku=sku)).scalars().first()
+        product = self._session.execute(select(model.Product).filter_by(sku=sku)).scalars().first()
+        if product:
+            self.seen.add(product)
+        return product
 
     def list(self) -> Sequence[model.Product]:
-        return self._session.execute(select(model.Product)).scalars().all()
+        products = self._session.execute(select(model.Product)).scalars().all()
+        self.seen.update(products)
+        return products

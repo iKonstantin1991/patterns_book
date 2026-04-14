@@ -24,7 +24,7 @@ def add_batch(batch: Batch, uow: AbstractUnitOfWork) -> None:
         uow.commit()
 
 
-def allocate(line: OrderLine, uow: AbstractUnitOfWork) -> str:
+def allocate(line: OrderLine, uow: AbstractUnitOfWork) -> str | None:
     with uow:
         product = uow.products.get(line.sku)
         if product is None:

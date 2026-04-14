@@ -8,6 +8,7 @@ from sqlalchemy.orm import sessionmaker as sa_sessionmaker
 
 from patterns_book.adapters.repository import ProductSQLRepository
 from patterns_book.adapters.unit_of_work import SqlAlchemyUnitOfWork
+from patterns_book.service.message_bus import InMemoryMessageBus
 from tests.conftest import generate_sku, make_domain_batch, make_domain_order_line, make_domain_product
 
 pytestmark = pytest.mark.usefixtures("db_cleanup")
@@ -27,7 +28,7 @@ def order_line_qty() -> int:
 def uow_factory(sessionmaker: sa_sessionmaker[Session]) -> Callable[[], SqlAlchemyUnitOfWork]:
     def factory() -> SqlAlchemyUnitOfWork:
         session = sessionmaker()
-        return SqlAlchemyUnitOfWork(ProductSQLRepository(session), session)
+        return SqlAlchemyUnitOfWork(ProductSQLRepository(session), session, InMemoryMessageBus())
 
     return factory
 

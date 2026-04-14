@@ -3,12 +3,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
+from patterns_book.domain import events
+
 if TYPE_CHECKING:
     from datetime import date
-
-
-class OutOfStockError(Exception):
-    pass
 
 
 @dataclass(unsafe_hash=True)
@@ -61,14 +59,15 @@ class Product:
     def __init__(self, sku: str, batches: list[Batch], version_number: int = 0) -> None:
         self.sku = sku
         self.batches = batches
+        self.events: list[events.Event] = []
         self._version_number = version_number
 
-    def allocate(self, line: OrderLine) -> str:
+    def allocate(self, line: OrderLine) -> str | None:
         try:
             batch = next(b for b in sorted(self.batches) if b.can_allocate(line))
         except StopIteration:
-            msg = f"Cannot allocate {line}"
-            raise OutOfStockError(msg) from None
+            self.events.append(events.OutOfStock(self.sku))
+            return None
 
         batch.allocate(line)
         self._version_number += 1
